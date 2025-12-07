@@ -2,18 +2,18 @@
 # Polls satellites, aggregates results, sends alerts, serves dashboard
 
 aggregator:
-  port: 8080
+  port: 9855
   bind: "0.0.0.0"
   interval: 300  # Poll every 5 minutes
 
   satellites:
-    - name: server-1
+    server-1:
       url: "http://server1.example.com:9855/health"
 
-    - name: server-2
+    server-2:
       url: "http://server2.example.com:9855/health"
 
-    - name: app-server
+    app-server:
       url: "http://app.example.com:9855/health"
 
   alerts:
