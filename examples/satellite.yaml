@@ -10,11 +10,11 @@ satellite:
     api_health:
       actions:
         - name: fetch
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/health"
 
-        - action: "compare_number"
+        - action: compare_number
           config:
             value: "{{ fetch.status_code }}"
             threshold: 200
@@ -24,15 +24,15 @@ satellite:
     api_auth:
       actions:
         - name: fetch
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/api/protected"
             auth:
-              type: "basic"
-              username_env: "API_USERNAME"  # Reads from $API_USERNAME
-              password_env: "API_PASSWORD"  # Reads from $API_PASSWORD
+              type: basic
+              username_env: API_USERNAME  # Reads from $API_USERNAME
+              password_env: API_PASSWORD  # Reads from $API_PASSWORD
 
-        - action: "compare_number"
+        - action: compare_number
           config:
             value: "{{ fetch.status_code }}"
             threshold: 200
@@ -42,15 +42,15 @@ satellite:
     api_auth_file:
       actions:
         - name: fetch
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/api/protected"
             auth:
-              type: "basic"
+              type: basic
               username_file: "/secrets/api-username.txt"
               password_file: "/secrets/api-password.txt"
 
-        - action: "compare_number"
+        - action: compare_number
           config:
             value: "{{ fetch.status_code }}"
             threshold: 200
@@ -60,15 +60,15 @@ satellite:
     api_token:
       actions:
         - name: fetch
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/api/data"
             auth:
-              type: "header"
-              header: "Authorization"
-              value_env: "API_TOKEN"  # Reads from $API_TOKEN
+              type: header
+              header: Authorization
+              value_env: API_TOKEN  # Reads from $API_TOKEN
 
-        - action: "compare_number"
+        - action: compare_number
           config:
             value: "{{ fetch.status_code }}"
             threshold: 200
@@ -77,7 +77,7 @@ satellite:
     # File stat check
     log_file:
       actions:
-        - action: "file_stat"
+        - action: file_stat
           config:
             path: "/var/log/app.log"
 
@@ -85,11 +85,11 @@ satellite:
     config_check:
       actions:
         - name: read_file
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/config"
 
-        - action: "regex_match"
+        - action: regex_match
           config:
             input: "{{ read_file.body }}"
             pattern: "enabled.*true"
@@ -98,16 +98,16 @@ satellite:
     json_check:
       actions:
         - name: fetch
-          action: "http_get"
+          action: http_get
           config:
             url: "http://localhost:8080/api/status"
 
         - name: parse
-          action: "parse_json"
+          action: parse_json
           config:
             input: "{{ fetch.body }}"
 
-        - action: "json_extract"
+        - action: json_extract
           config:
-            json_ref: "parse.data"
-            path: "status"
+            json_ref: parse.data
+            path: status

@@ -11,7 +11,7 @@ satellite:
     # Check disk usage on root partition
     disk_usage:
       actions:
-        - action: "system/check-disk"
+        - action: system/check-disk
           config:
             path: "/"
             threshold: 90
@@ -19,14 +19,14 @@ satellite:
     # Check system load
     system_load:
       actions:
-        - action: "system/check-load"
+        - action: system/check-load
           config:
             threshold_multiplier: 2.0
 
     # Check memory usage
     memory_usage:
       actions:
-        - action: "system/check-memory"
+        - action: system/check-memory
           config:
             threshold: 90
 
