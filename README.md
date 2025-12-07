@@ -40,12 +40,12 @@ Built-in actions for common tasks:
 ```yaml
 actions:
   - name: fetch
-    action: "http_get"
+    action: http_get
     config:
       url: "https://api.example.com/health"
 
   - name: check_status
-    action: "compare_number"
+    action: compare_number
     config:
       value: "{{ fetch.status_code }}"
       equals: 200
@@ -58,11 +58,11 @@ Pre-built scripts in the `actions/` directory, referenced by category/name:
 
 ```yaml
 actions:
-  - action: "system/check-load"
+  - action: system/check-load
     config:
       threshold_multiplier: 2.0
 
-  - action: "database/postgres-connection"
+  - action: database/postgres-connection
     config:
       connection_string: "postgresql://user@localhost/db"
 ```
