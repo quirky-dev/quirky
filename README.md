@@ -14,6 +14,12 @@ Quirky is different:
 - **Flexible**: Write checks in bash, Python, Node.js, or anything that outputs JSON
 - **Quirky**: Built-in checks for unusual patterns (e.g., "last database insert age", "homepage scraping")
 
+## Dashboard
+
+![Quirky Dashboard](assets/quirky-screenshot.png)
+
+The aggregator provides a clean web interface showing all monitored satellites and their health checks at a glance.
+
 ## Quick Start
 
 ```bash
