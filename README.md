@@ -23,17 +23,22 @@ The aggregator provides a clean web interface showing all monitored satellites a
 ## Quick Start
 
 ```bash
+# Run the demo config (monitors the local system and sets up the dashboard)
+quirky examples/demo.yaml
+
+# Or with Nix
+nix run .#quirky -- examples/demo.yaml
+
+# View the aggregator's dashboard
+http://localhost:9855
+```
+
+```bash
 # Run a satellite (monitors local system, exposes /health endpoint)
 quirky examples/satellite.yaml
 
 # Run an aggregator (polls satellites, shows dashboard, sends alerts)
 quirky examples/aggregator.yaml
-
-# Run the demo config (monitors the local system and sets up the dashboard)
-quirky examples/demo.yaml
-
-# View the aggregator's dashboard
-http://localhost:9855
 ```
 
 ## How Actions Work
