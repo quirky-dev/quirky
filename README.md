@@ -1,6 +1,9 @@
-# Quirky - Simple, Flexible Health Monitoring
+# Quirky - Simple, Flexible Server Health Monitoring
 
-A lightweight health monitoring system that lets you write checks in **any language**.
+A lightweight server health monitoring system with notifications that lets you write
+checks in **any language**.
+
+<img src="assets/quirky-screenshot.png" alt="Quirky Dashboard" width="600">
 
 ## Philosophy
 
@@ -13,12 +16,6 @@ Quirky is different:
 - **Simple**: One binary, one config file
 - **Flexible**: Write checks in bash, Python, Node.js, or anything that outputs JSON
 - **Quirky**: Built-in checks for unusual patterns (e.g., "last database insert age", "homepage scraping")
-
-## Dashboard
-
-![Quirky Dashboard](assets/quirky-screenshot.png)
-
-The aggregator provides a clean web interface showing all monitored satellites and their health checks at a glance.
 
 ## Quick Start
 
