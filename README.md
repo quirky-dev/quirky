@@ -18,14 +18,16 @@ Quirky is different:
 
 ```bash
 # Run a satellite (monitors local system, exposes /health endpoint)
-quirky --config examples/satellite.yaml
+quirky examples/satellite.yaml
 
 # Run an aggregator (polls satellites, shows dashboard, sends alerts)
-quirky --config examples/aggregator.yaml
+quirky examples/aggregator.yaml
 
-# View the dashboard
-# Satellite: http://localhost:9855
-# Aggregator: http://localhost:8080
+# Run the demo config (monitors the local system and sets up the dashboard)
+quirky examples/demo.yaml
+
+# View the aggregator's dashboard
+http://localhost:9855
 ```
 
 ## How Actions Work
