@@ -1,9 +1,11 @@
-# Quirky - Simple, Flexible Server Health Monitoring
+# 🤖 quirky :: Simple, Flexible Server Health Monitoring
 
 A lightweight server health monitoring system with notifications that lets you write
 checks in **any language**.
 
-<img src="assets/quirky-screenshot.png" alt="Quirky Dashboard" width="600">
+<p align="center">
+  <img src="assets/quirky-screenshot.png" alt="Quirky Dashboard" width="500">
+</p>
 
 ## Philosophy
 
