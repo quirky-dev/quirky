@@ -51,10 +51,17 @@ data HealthResponse = HealthResponse
 instance FromJSON HealthResponse where
   parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' . drop 2 }
 
+-- | Ensure URL ends with /health
+ensureHealthPath :: Text -> Text
+ensureHealthPath url
+  | "/health" `T.isSuffixOf` url = url
+  | otherwise = url <> "/health"
+
 -- | Poll a satellite endpoint
 pollSatellite :: Manager -> SatelliteEndpoint -> IO SatelliteStatus
 pollSatellite manager endpoint = do
-  request <- parseRequest $ T.unpack (seUrl endpoint)
+  let fullUrl = ensureHealthPath (seUrl endpoint)
+  request <- parseRequest $ T.unpack fullUrl
   response <- httpLbs request manager
   case decode (responseBody response) of
     Just healthResp -> return $ SatelliteOk (hrChecks healthResp)

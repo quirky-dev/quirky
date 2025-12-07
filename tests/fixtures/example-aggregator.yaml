@@ -4,9 +4,9 @@ aggregator:
   interval: 60
   satellites:
     server1:
-      url: "http://server1.example.com:8080/health"
+      url: "http://server1.example.com:8080"
     server2:
-      url: "http://server2.example.com:8080/health"
+      url: "http://server2.example.com:8080"
   alerts:
     pushover:
       user_file: "/secrets/pushover-user.txt"

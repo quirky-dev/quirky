@@ -8,13 +8,13 @@ aggregator:
 
   satellites:
     server-1:
-      url: "http://server1.example.com:9855/health"
+      url: "http://server1.example.com:9855"
 
     server-2:
-      url: "http://server2.example.com:9855/health"
+      url: "http://server2.example.com:9855"
 
     app-server:
-      url: "http://app.example.com:9855/health"
+      url: "http://app.example.com:9855"
 
   alerts:
     pushover:
