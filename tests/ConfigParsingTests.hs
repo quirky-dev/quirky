@@ -166,18 +166,18 @@ aggregatorConfigTests = testGroup "AggregatorConfig"
   [ testCase "parses basic aggregator config" $ do
       let json = [aesonQQ|
         {
-          "port": 9000,
+          "port": 9855,
           "bind": "0.0.0.0",
           "interval": 60,
           "satellites": {
-            "server1": { "url": "http://server1:8080/health" }
+            "server1": { "url": "http://server1:9855/health" }
           },
           "alerts": {}
         }
         |]
       case decode (encode json) of
         Just (cfg :: AggregatorConfig) -> do
-          aggPort cfg @?= 9000
+          aggPort cfg @?= 9855
           aggBind cfg @?= "0.0.0.0"
           aggInterval cfg @?= 60
           Map.size (aggSatellites cfg) @?= 1
@@ -231,7 +231,7 @@ topLevelConfigTests = testGroup "Top-level Config"
       let json = [aesonQQ|
         {
           "satellite": {
-            "port": 8080,
+            "port": 9855,
             "bind": "0.0.0.0",
             "checks": {}
           }
@@ -239,7 +239,7 @@ topLevelConfigTests = testGroup "Top-level Config"
         |]
       case decode (encode json) of
         Just (cfg :: Config) -> do
-          cfgSatellite cfg @?= Just (SatelliteConfig 8080 "0.0.0.0" Map.empty)
+          cfgSatellite cfg @?= Just (SatelliteConfig 9855 "0.0.0.0" Map.empty)
           cfgAggregator cfg @?= Nothing
         Nothing -> assertFailure "Failed to parse satellite-only config"
 
@@ -247,7 +247,7 @@ topLevelConfigTests = testGroup "Top-level Config"
       let json = [aesonQQ|
         {
           "aggregator": {
-            "port": 9000,
+            "port": 9855,
             "bind": "0.0.0.0",
             "interval": 60,
             "satellites": {},
@@ -267,12 +267,12 @@ topLevelConfigTests = testGroup "Top-level Config"
       let json = [aesonQQ|
         {
           "satellite": {
-            "port": 8080,
+            "port": 9856,
             "bind": "0.0.0.0",
             "checks": {}
           },
           "aggregator": {
-            "port": 9000,
+            "port": 9855,
             "bind": "0.0.0.0",
             "interval": 60,
             "satellites": {},

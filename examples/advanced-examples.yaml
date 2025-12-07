@@ -1,5 +1,5 @@
 satellite:
-  port: 8081
+  port: 9855
   bind: "0.0.0.0"
 
   checks:

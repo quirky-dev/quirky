@@ -1,12 +1,12 @@
 aggregator:
-  port: 9000
+  port: 9855
   bind: "0.0.0.0"
   interval: 60
   satellites:
     server1:
-      url: "http://server1.example.com:8080"
+      url: "http://server1.example.com:9855"
     server2:
-      url: "http://server2.example.com:8080"
+      url: "http://server2.example.com:9855"
   alerts:
     pushover:
       user_file: "/secrets/pushover-user.txt"

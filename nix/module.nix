@@ -29,7 +29,7 @@ in {
         {
           satellite = {
             bind = "0.0.0.0";
-            port = 8080;
+            port = 9855;
             checks = {
               disk_space = {
                 actions = [{
