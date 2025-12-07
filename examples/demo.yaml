@@ -1,0 +1,47 @@
+# Demo configuration - combined satellite + aggregator
+# This runs both modes in a single process:
+# - Satellite: runs local system checks
+# - Aggregator: polls the satellite (itself) and serves dashboard
+
+satellite:
+  port: 9856
+  bind: "127.0.0.1"
+
+  checks:
+    # Check disk usage on root partition
+    disk_usage:
+      actions:
+        - action: "system/check-disk"
+          config:
+            path: "/"
+            threshold: 90
+
+    # Check system load
+    system_load:
+      actions:
+        - action: "system/check-load"
+          config:
+            threshold_multiplier: 2.0
+
+    # Check memory usage
+    memory_usage:
+      actions:
+        - action: "system/check-memory"
+          config:
+            threshold: 90
+
+aggregator:
+  port: 9855
+  bind: "127.0.0.1"
+  interval: 30  # Poll every 30 seconds
+
+  satellites:
+    local:
+      url: "http://127.0.0.1:9856/health"
+
+  alerts: {}
+    # To enable alerts, configure one or both:
+    # pushover:
+    #   user_file: "/path/to/pushover-user.txt"
+    # slack:
+    #   webhook_file: "/path/to/slack-webhook.txt"
