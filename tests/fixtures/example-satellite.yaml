@@ -1,0 +1,35 @@
+satellite:
+  port: 8080
+  bind: "0.0.0.0"
+  checks:
+    web_health:
+      actions:
+        - name: fetch
+          action: http_get
+          config:
+            url: "https://example.com/health"
+        - name: parse
+          action: parse_json
+          config:
+            input: "{{ fetch.body }}"
+        - name: extract_status
+          action: json_extract
+          config:
+            json_ref: parse.data
+            path: "status"
+        - action: regex_match
+          config:
+            input: "{{ extract_status.value }}"
+            pattern: "^ok$"
+
+    disk_space:
+      actions:
+        - name: check_file
+          action: file_stat
+          config:
+            path: "/var/log/app.log"
+        - action: compare_number
+          config:
+            value: "{{ check_file.size }}"
+            threshold: 104857600  # 100MB
+            operator: "<"

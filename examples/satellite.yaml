@@ -1,0 +1,103 @@
+# Satellite configuration example
+# Runs local checks and exposes /health endpoint
+
+satellite:
+  port: 9855
+  bind: "0.0.0.0"
+
+  checks:
+    # Simple HTTP health check using builtin actions
+    api_health:
+      name: "API Health Check"
+      actions:
+        - name: fetch
+          action: "http_get"
+          config:
+            url: "http://localhost:8080/health"
+
+        - name: result
+          action: "compare_number"
+          config:
+            value: "{{ fetch.status_code }}"
+            equals: 200
+            ok_message: "API is healthy"
+            error_message: "API returned non-200 status"
+
+    # Database query age check using builtin actions
+    postgres_activity:
+      name: "Last DB Insert"
+      actions:
+        - name: query
+          action: "sql_query"
+          config:
+            database: "postgresql://user@localhost/mydb"
+            query: "SELECT EXTRACT(EPOCH FROM (NOW() - created_at)) FROM events ORDER BY created_at DESC LIMIT 1"
+
+        - name: result
+          action: "compare_number"
+          config:
+            value: "{{ query.rows[0][0] }}"
+            warn_threshold: 1800
+            error_threshold: 3600
+            ok_message: "Recent activity"
+            warning_message: "No activity for 30min"
+            error_message: "No activity for 1hour"
+
+    # File age check using builtin actions
+    backup_freshness:
+      name: "Backup Freshness"
+      actions:
+        - name: stat
+          action: "file_stat"
+          config:
+            path: "/var/backups/latest.sql.gz"
+
+        - name: result
+          action: "compare_timestamp"
+          config:
+            timestamp: "{{ stat.mtime }}"
+            warn_age: 86400   # 24 hours
+            error_age: 172800 # 48 hours
+            ok_message: "Backup is fresh"
+            warning_message: "Backup is getting old"
+            error_message: "Backup is too old"
+
+    # System load check using bundled action
+    # Bundled actions are referenced by category/name (e.g., "system/check-load")
+    system_load:
+      name: "System Load"
+      actions:
+        - name: check
+          action: "system/check-load"
+          config:
+            threshold_multiplier: 2.0
+
+    # Disk space check using bundled action
+    disk_usage:
+      name: "Disk Usage"
+      actions:
+        - name: check
+          action: "system/check-disk"
+          config:
+            path: "/"
+            threshold: 90
+
+    # Memory check using bundled action
+    memory_usage:
+      name: "Memory Usage"
+      actions:
+        - name: check
+          action: "system/check-memory"
+          config:
+            threshold: 90
+
+    # Custom script example - use explicit path for your own scripts
+    # This references a hypothetical local script (create your own)
+    custom_check:
+      name: "Custom Check"
+      actions:
+        - name: check
+          action: "./checks/my-custom-script.sh"
+          config:
+            # Your custom parameters here
+            param1: "value1"

@@ -1,0 +1,279 @@
+satellite:
+  port: 8081
+  bind: "0.0.0.0"
+
+  checks:
+    # Example: Check a web service with authentication
+    web-service-status:
+      actions:
+        # Step 1: Fetch a status page with basic auth
+        - name: fetch_status
+          action: "http_get"
+          config:
+            url: "https://example.com/status"
+            auth:
+              type: basic
+              username_file: /run/secrets/web-user
+              password_file: /run/secrets/web-pass
+
+        # Step 2: Extract a timestamp or metric using regex
+        - name: extract_timestamp
+          action: "regex_match"
+          config:
+            input: "{{ fetch_status.body }}"
+            pattern: "Last update: ([0-9T:Z-]+)"
+            capture_group: 1
+
+        # Step 3: Verify the timestamp is recent
+        - action: "compare_timestamp"
+          config:
+            timestamp: "{{ extract_timestamp.match }}"
+            max_age_hours: 2
+
+    # Example: Check that a search page returns results
+    search-functionality:
+      actions:
+        # Step 1: Perform a search query
+        - name: search_result
+          action: "http_get"
+          config:
+            url: "https://example.com/search?q=test"
+            auth:
+              type: basic
+              username_file: /run/secrets/web-user
+              password_file: /run/secrets/web-pass
+
+        # Step 2: Parse HTML to find search results
+        - name: parse_results
+          action: "parse_html"
+          config:
+            html: "{{ search_result.body }}"
+            selector: ".search-result"
+
+        # Step 3: Verify we have at least 1 result
+        - action: "compare_number"
+          config:
+            value: "{{ parse_results.matches }}"
+            operator: ">="
+            threshold: 1
+
+    # Example: Check HTTP status code
+    page-availability:
+      actions:
+        # Step 1: Fetch a page
+        - name: fetch_page
+          action: "http_get"
+          config:
+            url: "https://example.com/important-page"
+            auth:
+              type: basic
+              username_file: /run/secrets/web-user
+              password_file: /run/secrets/web-pass
+
+        # Step 2: Verify successful response
+        - action: "compare_number"
+          config:
+            value: "{{ fetch_page.status_code }}"
+            operator: "=="
+            threshold: 200
+
+    # Example: Public API without auth
+    public-api-check:
+      actions:
+        - name: fetch_data
+          action: "http_get"
+          config:
+            url: "https://api.example.com/health"
+
+        - action: "compare_number"
+          config:
+            value: "{{ fetch_data.status_code }}"
+            operator: "=="
+            threshold: 200
+
+# ============================================================================
+# Authentication Examples
+# ============================================================================
+
+# Example with environment variables:
+#
+# check-with-env-vars:
+#   actions:
+#     - name: fetch_status
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/status"
+#         auth:
+#           type: basic
+#           username_env: WEB_USERNAME
+#           password_env: WEB_PASSWORD
+
+# Example with inline credentials (NOT recommended for production):
+#
+# check-with-inline-auth:
+#   actions:
+#     - name: fetch_status
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/status"
+#         auth:
+#           type: basic
+#           username: "myuser"
+#           password: "mypassword"
+
+# Example with API key in header (e.g., Bearer token):
+#
+# api-with-bearer-token:
+#   actions:
+#     - name: fetch_data
+#       action: "http_get"
+#       config:
+#         url: "https://api.example.com/data"
+#         auth:
+#           type: header
+#           header: "Authorization"
+#           value: "Bearer mytoken"
+#           # Or from file: value_file: /run/secrets/api-token
+#           # Or from env: value_env: API_TOKEN
+
+# Example with API key in query parameter:
+#
+# api-with-query-param:
+#   actions:
+#     - name: fetch_data
+#       action: "http_get"
+#       config:
+#         url: "https://api.example.com/data"
+#         auth:
+#           type: query
+#           param: "api_key"
+#           value_file: /run/secrets/api-key
+
+# ============================================================================
+# HTML Parsing Examples
+# ============================================================================
+
+# Example: Extract text from specific HTML tags
+#
+# parse-by-tag:
+#   actions:
+#     - name: fetch_page
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/metrics"
+#
+#     - name: parse_h1
+#       action: "parse_html"
+#       config:
+#         html: "{{ fetch_page.body }}"
+#         selector: "h1"  # Tag selector
+
+# Example: Extract text from elements with a specific class
+#
+# parse-by-class:
+#   actions:
+#     - name: fetch_page
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/status"
+#
+#     - name: parse_status
+#       action: "parse_html"
+#       config:
+#         html: "{{ fetch_page.body }}"
+#         selector: ".status-message"  # Class selector
+
+# ============================================================================
+# JSON Extraction Examples
+# ============================================================================
+
+# Example: Extract field from JSON API response
+#
+# api-check-with-json:
+#   actions:
+#     - name: fetch_api
+#       action: "http_get"
+#       config:
+#         url: "https://api.example.com/data?format=json"
+#
+#     - name: parse_json
+#       action: "parse_json"
+#       config:
+#         input: "{{ fetch_api.body }}"
+#
+#     - name: extract_timestamp
+#       action: "json_extract"
+#       config:
+#         json: "{{ parse_json.data }}"
+#         path: "results[0].timestamp"  # Supports array indexing
+#
+#     - action: "builtins/compare_timestamp"
+#       config:
+#         timestamp: "{{ extract_timestamp.value }}"
+#         max_age_hours: 24
+
+# Example: Extract nested JSON field
+#
+# nested-json-extract:
+#   actions:
+#     - name: fetch_data
+#       action: "http_get"
+#       config:
+#         url: "https://api.example.com/metrics"
+#
+#     - name: parse_json
+#       action: "parse_json"
+#       config:
+#         input: "{{ fetch_data.body }}"
+#
+#     - name: extract_count
+#       action: "json_extract"
+#       config:
+#         json: "{{ parse_json.data }}"
+#         path: "response.data.count"  # Navigate nested objects
+#
+#     - action: "builtins/compare_number"
+#       config:
+#         value: "{{ extract_count.value }}"
+#         operator: ">"
+#         threshold: 0
+
+# ============================================================================
+# Regex Examples (for non-JSON data)
+# ============================================================================
+
+# Example: Extract timestamp from HTML page
+#
+# extract-timestamp-html:
+#   actions:
+#     - name: fetch_page
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/status"
+#
+#     - name: extract_time
+#       action: "regex_match"
+#       config:
+#         input: "{{ fetch_page.body }}"
+#         pattern: "Last update: ([0-9T:Z-]+)"
+#         capture_group: 1
+#
+#     - action: "builtins/compare_timestamp"
+#       config:
+#         timestamp: "{{ extract_time.match }}"
+#         max_age_hours: 2
+
+# Example: Extract version number from text
+#
+# extract-version:
+#   actions:
+#     - name: fetch_page
+#       action: "http_get"
+#       config:
+#         url: "https://example.com/version.txt"
+#
+#     - action: "builtins/regex_match"
+#       config:
+#         input: "{{ fetch_page.body }}"
+#         pattern: "Version: v([0-9.]+)"
+#         capture_group: 1  # Extract just the version number

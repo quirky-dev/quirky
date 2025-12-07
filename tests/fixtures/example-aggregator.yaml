@@ -1,0 +1,14 @@
+aggregator:
+  port: 9000
+  bind: "0.0.0.0"
+  interval: 60
+  satellites:
+    server1:
+      url: "http://server1.example.com:8080/health"
+    server2:
+      url: "http://server2.example.com:8080/health"
+  alerts:
+    pushover:
+      user_file: "/secrets/pushover-user.txt"
+    slack:
+      webhook_file: "/secrets/slack-webhook.txt"
