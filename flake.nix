@@ -47,7 +47,8 @@
         };
 
         quirky = pkgs.stdenv.mkDerivation {
-          name = "quirky-with-actions";
+          pname = "quirky";
+          version = "0.1.0.0";
           src = ./.;
 
           nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -58,9 +59,6 @@
             mkdir -p $out/share/quirky/actions
             mkdir -p $out/share/quirky/web
 
-            # Copy the binary
-            cp ${quirkyBinary}/bin/quirky $out/bin/
-
             # Copy action library and wrap scripts with dependencies
             cp -r actions/* $out/share/quirky/actions/
             chmod +x $out/share/quirky/actions/**/*.sh
@@ -70,6 +68,12 @@
               wrapProgram $script \
                 --prefix PATH : ${pkgs.lib.makeBinPath coreActionDeps}
             done
+
+            # Copy the binary and wrap it with PATH to dependencies
+            cp ${quirkyBinary}/bin/quirky $out/bin/quirky
+            wrapProgram $out/bin/quirky \
+              --prefix PATH : ${pkgs.lib.makeBinPath coreActionDeps} \
+              --set QUIRKY_ACTION_PATH $out/share/quirky/actions
 
             # Copy frontend build
             cp -r ${frontend}/* $out/share/quirky/web/
