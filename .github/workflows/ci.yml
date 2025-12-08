@@ -16,7 +16,7 @@ jobs:
       - name: Setup Haskell
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: '9.10.1'
+          ghc-version: '9.10.3'
           cabal-version: '3.12.1.0'
 
       - name: Cache Cabal dependencies
