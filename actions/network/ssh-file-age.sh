@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Action: backup/ssh-file-age
+# Action: network/ssh-file-age
 # Description: Check age of files on remote SSH server (e.g., backup files)
 # Parameters:
 #   - host (required): Remote host
 #   - port (optional, default: 22): SSH port
 #   - user (required): SSH user
 #   - ssh_key (required): Path to SSH private key
+#   - known_hosts_file (optional): Path to known_hosts file for host verification
 #   - remote_path (required): Remote path to check
 #   - databases (required): Array of database names (subdirectories)
 #   - max_age_hours (optional, default: 24): Maximum acceptable file age in hours
@@ -18,6 +19,7 @@ HOST=$(echo "$CONFIG" | jq -r '.host')
 PORT=$(echo "$CONFIG" | jq -r '.port // 22')
 USER=$(echo "$CONFIG" | jq -r '.user')
 SSH_KEY=$(echo "$CONFIG" | jq -r '.ssh_key')
+KNOWN_HOSTS_FILE=$(echo "$CONFIG" | jq -r '.known_hosts_file // empty')
 REMOTE_PATH=$(echo "$CONFIG" | jq -r '.remote_path')
 DATABASES=$(echo "$CONFIG" | jq -r '.databases[]' 2>/dev/null || echo "")
 MAX_AGE_HOURS=$(echo "$CONFIG" | jq -r '.max_age_hours // 24')
@@ -53,6 +55,16 @@ if [ -z "$DATABASES" ]; then
   exit 0
 fi
 
+# Build SSH options
+SSH_OPTS="-i $SSH_KEY -p $PORT"
+if [ -n "$KNOWN_HOSTS_FILE" ]; then
+  # Use provided known_hosts file with strict checking
+  SSH_OPTS="$SSH_OPTS -o UserKnownHostsFile=$KNOWN_HOSTS_FILE -o StrictHostKeyChecking=yes"
+else
+  # No known_hosts file provided - disable strict checking
+  SSH_OPTS="$SSH_OPTS -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+fi
+
 # Check for dumps of all databases
 ALL_OK=true
 MESSAGES=()
@@ -63,8 +75,7 @@ while IFS= read -r DB; do
   [ -z "$DB" ] && continue
 
   # List remote files for this database, sorted by filename (in subdirectory)
-  LATEST=$(sudo -u postgres ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-    -i "$SSH_KEY" -p "$PORT" "$USER@$HOST" \
+  LATEST=$(ssh $SSH_OPTS "$USER@$HOST" \
     "ls -1 $REMOTE_PATH/$DB/*.sql.gz 2>/dev/null | sort -r | head -1" 2>&1 || echo "")
 
   if [ -z "$LATEST" ]; then

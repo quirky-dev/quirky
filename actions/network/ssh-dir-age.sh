@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Action: backup/ssh-dir-age
+# Action: network/ssh-dir-age
 # Description: Check modification time of a remote directory (e.g., rsync backup target)
 # Parameters:
 #   - host (required): Remote host
 #   - port (optional, default: 22): SSH port
 #   - user (required): SSH user
 #   - ssh_key (required): Path to SSH private key
+#   - known_hosts_file (optional): Path to known_hosts file for host verification
 #   - remote_path (required): Remote directory path to check
 #   - max_age_hours (optional, default: 24): Maximum acceptable age in hours
 
@@ -17,6 +18,7 @@ HOST=$(echo "$CONFIG" | jq -r '.host')
 PORT=$(echo "$CONFIG" | jq -r '.port // 22')
 USER=$(echo "$CONFIG" | jq -r '.user')
 SSH_KEY=$(echo "$CONFIG" | jq -r '.ssh_key')
+KNOWN_HOSTS_FILE=$(echo "$CONFIG" | jq -r '.known_hosts_file // empty')
 REMOTE_PATH=$(echo "$CONFIG" | jq -r '.remote_path')
 MAX_AGE_HOURS=$(echo "$CONFIG" | jq -r '.max_age_hours // 24')
 
@@ -45,10 +47,19 @@ if [ -z "$REMOTE_PATH" ] || [ "$REMOTE_PATH" = "null" ]; then
   exit 0
 fi
 
+# Build SSH options
+SSH_OPTS="-i $SSH_KEY -p $PORT"
+if [ -n "$KNOWN_HOSTS_FILE" ]; then
+  # Use provided known_hosts file with strict checking
+  SSH_OPTS="$SSH_OPTS -o UserKnownHostsFile=$KNOWN_HOSTS_FILE -o StrictHostKeyChecking=yes"
+else
+  # No known_hosts file provided - disable strict checking
+  SSH_OPTS="$SSH_OPTS -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+fi
+
 # Get the modification time of the remote directory
 # Use stat to get mtime as Unix timestamp
-MTIME=$(sudo -u quirky ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-  -i "$SSH_KEY" -p "$PORT" "$USER@$HOST" \
+MTIME=$(ssh $SSH_OPTS "$USER@$HOST" \
   "stat -c %Y '$REMOTE_PATH' 2>/dev/null" 2>&1 || echo "")
 
 # Check for SSH errors
