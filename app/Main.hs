@@ -1,46 +1,54 @@
 module Main where
 
 import Control.Concurrent (forkIO)
+import Control.Exception (catch)
 import Control.Monad (void)
+import Control.Monad.Logger
+import Data.Text (pack)
 import Data.Yaml (decodeFileEither)
+import Foreign.C.Types (CInt(..))
 import Quirky.Aggregator
+import Quirky.Logger
 import Quirky.Server
 import Quirky.Types
 import System.Environment (getArgs)
-import System.Exit (exitFailure)
+import System.Exit (ExitCode(..))
+import System.IO (hPutStrLn, stderr)
+
+foreign import ccall "exit" c_exit :: CInt -> IO ()
 
 main :: IO ()
-main = do
+main = run `catch` handleExit
+  where
+    handleExit :: ExitCode -> IO ()
+    handleExit ExitSuccess = c_exit 0
+    handleExit (ExitFailure n) = c_exit (fromIntegral n)
+
+run :: IO ()
+run = do
   args <- getArgs
   case args of
     [configPath] -> do
       result <- decodeFileEither configPath
       case result of
-        Left err -> do
-          putStrLn $ "Failed to parse config: " ++ show err
-          exitFailure
+        Left err -> withLogging $ logErrorN $ pack $ "Failed to parse config: " <> show err
         Right config -> do
-          putStrLn $ "Parsed config: " ++ show config
+          withLogging $ logDebugN $ pack $ "Parsed config: " <> show config
           case detectMode config of
-            Nothing -> do
-              putStrLn "Error: Config must have either 'satellite' or 'aggregator' section"
-              exitFailure
+            Nothing ->
+              withLogging $ logErrorN "Config must have either 'satellite' or 'aggregator' section"
 
-            Just (SatelliteMode satCfg) -> do
-              putStrLn "Running in SATELLITE mode"
+            Just (SatelliteMode satCfg) ->
               runSatellite satCfg
 
-            Just (AggregatorMode aggCfg) -> do
-              putStrLn "Running in AGGREGATOR mode"
+            Just (AggregatorMode aggCfg) ->
               runAggregator aggCfg
 
             Just (BothMode satCfg aggCfg) -> do
-              putStrLn "Running in BOTH modes (satellite + aggregator)"
               -- Start satellite in background thread
               void $ forkIO $ runSatellite satCfg
               -- Run aggregator in main thread
               runAggregator aggCfg
 
-    _ -> do
-      putStrLn "Usage: quirky <config.yaml>"
-      exitFailure
+    _ ->
+      hPutStrLn stderr "Usage: quirky <config.yaml>"

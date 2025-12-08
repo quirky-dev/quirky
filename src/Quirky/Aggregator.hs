@@ -4,7 +4,7 @@
 module Quirky.Aggregator where
 
 import Control.Concurrent (forkIO, threadDelay)
-import Control.Exception (catch, SomeException)
+import Control.Exception (catch, SomeException, IOException)
 import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
@@ -13,6 +13,8 @@ import Data.IORef
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isJust)
+import Data.Streaming.Network (HostPreference)
+import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics
@@ -20,13 +22,15 @@ import Data.Time.Clock.POSIX (getPOSIXTime, posixSecondsToUTCTime)
 import Data.Time.Format (formatTime, defaultTimeLocale)
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp (defaultSettings, setHost, setPort, runSettings)
 import Quirky.Alerts
+import Quirky.Logger
 import Quirky.Types
 import Servant
 import qualified Servant.Server.StaticFiles as Static
 import System.Directory (doesDirectoryExist)
 import System.Environment (getExecutablePath)
+import System.Exit (exitFailure)
 import System.FilePath ((</>), takeDirectory)
 
 -- | Aggregator API: status endpoint, test alert, and static frontend
@@ -133,9 +137,13 @@ aggregatorServer webRoot state = statusHandler :<|> testAlertHandler :<|> Static
 
 -- | Run the aggregator
 runAggregator :: AggregatorConfig -> IO ()
-runAggregator config = runStdoutLoggingT $ do
-  $logInfo $ "Starting Quirky aggregator on " <> aggBind config <> ":" <> T.pack (show (aggPort config))
-  $logInfo $ "Polling " <> T.pack (show (Map.size $ aggSatellites config)) <> " satellites every " <> T.pack (show (aggInterval config)) <> "s"
+runAggregator config = do
+  let host = aggBind config
+      port = aggPort config
+
+  withLogging $ do
+    logInfoN $ "Starting Quirky aggregator on " <> host <> ":" <> T.pack (show port)
+    logInfoN $ "Polling " <> T.pack (show (Map.size $ aggSatellites config)) <> " satellites every " <> T.pack (show (aggInterval config)) <> "s"
 
   -- Initialize state
   let initialStatus = AggregatedStatus
@@ -148,8 +156,8 @@ runAggregator config = runStdoutLoggingT $ do
         , asLastAlertTime = 0
         }
 
-  statusRef <- liftIO $ newIORef initialStatus
-  alertStateRef <- liftIO $ newIORef initialAlertState
+  statusRef <- newIORef initialStatus
+  alertStateRef <- newIORef initialAlertState
 
   let state = AggregatorState
         { aggStatus = statusRef
@@ -158,21 +166,27 @@ runAggregator config = runStdoutLoggingT $ do
         }
 
   -- Determine web root path
-  exePath <- liftIO getExecutablePath
+  exePath <- getExecutablePath
   let exeDir = takeDirectory exePath
       packageRoot = takeDirectory exeDir
       nixWebRoot = packageRoot </> "share" </> "quirky" </> "web"
       devWebRoot = "web" </> "dist"  -- For local development with cabal
 
   -- Check if nix-built web root exists, otherwise fall back to dev
-  nixExists <- liftIO $ doesDirectoryExist nixWebRoot
+  nixExists <- doesDirectoryExist nixWebRoot
   let webRoot = if nixExists then nixWebRoot else devWebRoot
 
-  $logInfo $ "Serving frontend from: " <> T.pack webRoot
+  withLogging $ logDebugN $ "Serving frontend from: " <> T.pack webRoot
 
   -- Start polling thread
-  manager <- liftIO $ newManager tlsManagerSettings
-  _ <- liftIO $ forkIO $ pollAllSatellites manager config state
+  manager <- newManager tlsManagerSettings
+  _ <- forkIO $ pollAllSatellites manager config state
 
   -- Start web server
-  liftIO $ run (aggPort config) $ serve (Proxy :: Proxy AggregatorAPI) (aggregatorServer webRoot state)
+  let hostPref = fromString (T.unpack host) :: HostPreference
+      settings = setPort port $ setHost hostPref defaultSettings
+      app = serve (Proxy :: Proxy AggregatorAPI) (aggregatorServer webRoot state)
+
+  runSettings settings app `catch` \(e :: IOException) -> do
+    withLogging $ logErrorN $ "Failed to start server on " <> host <> ":" <> T.pack (show port) <> " - " <> T.pack (show e)
+    exitFailure
