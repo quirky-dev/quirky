@@ -52,7 +52,8 @@ if [ -z "$REMOTE_PATH" ] || [ "$REMOTE_PATH" = "null" ]; then
 fi
 
 # Build SSH options
-SSH_OPTS="-i $SSH_KEY -p $PORT"
+# -T: Disable pseudo-terminal allocation (non-interactive)
+SSH_OPTS="-T -i $SSH_KEY -p $PORT"
 if [ -n "$KNOWN_HOSTS_FILE" ]; then
   # Use provided known_hosts file with strict checking
   SSH_OPTS="$SSH_OPTS -o UserKnownHostsFile=$KNOWN_HOSTS_FILE -o StrictHostKeyChecking=yes"
