@@ -62,9 +62,10 @@ else
 fi
 
 # Get the size of the remote directory
-# Use du with human-readable output, then parse it
+# Use du with --apparent-size to get actual file sizes (not disk usage)
+# This avoids issues with compression/sparse files on different filesystems
 DU_OUTPUT=$(ssh $SSH_OPTS "$USER@$HOST" \
-  "du -s '$REMOTE_PATH' 2>/dev/null" 2>&1 || echo "")
+  "du -s --apparent-size '$REMOTE_PATH' 2>/dev/null" 2>&1 || echo "")
 
 # Check for SSH errors
 if [ -z "$DU_OUTPUT" ] || echo "$DU_OUTPUT" | grep -q "Permission denied\|Connection refused\|Could not resolve\|No such file"; then
@@ -123,8 +124,8 @@ if [ -n "$LOCAL_PATH" ]; then
     exit 0
   fi
 
-  # Get local directory size
-  LOCAL_SIZE_KB=$(du -s "$LOCAL_PATH" 2>/dev/null | awk '{print $1}')
+  # Get local directory size (using --apparent-size to match remote)
+  LOCAL_SIZE_KB=$(du -s --apparent-size "$LOCAL_PATH" 2>/dev/null | awk '{print $1}')
   LOCAL_SIZE_MB=$((LOCAL_SIZE_KB / 1024))
 
   if [ "$LOCAL_SIZE_MB" -gt 1024 ]; then
